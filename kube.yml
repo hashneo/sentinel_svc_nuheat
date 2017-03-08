@@ -30,7 +30,7 @@ spec:
       containers:
         -
           name: sentinel-nuheat
-          image: steventaylor.me:5000/sentinel-nuheat-arm:latest
+          image: docker.steventaylor.me/sentinel-nuheat-arm:latest
           imagePullPolicy: IfNotPresent
           env:
             -

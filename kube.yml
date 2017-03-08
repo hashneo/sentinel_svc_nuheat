@@ -30,7 +30,7 @@ spec:
       containers:
         -
           name: sentinel-nuheat
-          image: docker.steventaylor.me/sentinel-nuheat-arm:latest
+          image: docker.steventaylor.me/sentinel-nuheat-x86_64:latest
           imagePullPolicy: IfNotPresent
           env:
             -
@@ -43,3 +43,5 @@ spec:
             -
               containerPort: 5000
               protocol: TCP
+      nodeSelector:
+        arch: x86_64

@@ -1,11 +1,16 @@
 require('array.prototype.find');
 
-// based off the https://github.com/pfeffed/liftmaster_myq codebase
 function myq(config) {
 
     if ( !(this instanceof myq) ){
         return new myq(config);
     }
+
+    const memwatch = require('memwatch-next');
+
+    memwatch.on('leak', (info) => {
+        console.error('Memory leak detected:\n', info);
+    });
 
     const redis = require('redis');
     var moment = require('moment');
@@ -48,7 +53,7 @@ function myq(config) {
 
     statusCache.on( "set", function( key, value ){
         let data = JSON.stringify( { module: 'nuheat', id : key, value : value });
-        console.log( data );
+        //console.log( data );
         pub.publish("sentinel.device.update",  data);
     });
 
@@ -142,19 +147,19 @@ function myq(config) {
                 options['headers']['content-type'] = type;
             }
 
-            console.log( options.url );
+            //console.log( options.url );
             //console.log( data );
 
             request(options, (err, response, body) => {
 
-                console.log(body.toString('utf8'));
+                //console.log(body.toString('utf8'));
+                if ( err ) {
+                    reject(err);
+                    return;
+                }
 
                 if ( response.statusCode === 401 ){
                     securityToken = null;
-                    reject(err);
-                }
-
-                if ( err ) {
                     reject(err);
                     return;
                 }

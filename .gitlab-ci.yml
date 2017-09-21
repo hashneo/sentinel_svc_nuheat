@@ -15,4 +15,4 @@ build_image:
     - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN docker.steventaylor.me
     - docker build -t $CI_REGISTRY_IMAGE:0.0.$CI_BUILD_ID -f Dockerfile.$BUILD_ARCH .
     - docker push $CI_REGISTRY_IMAGE:0.0.$CI_BUILD_ID
-
+    - docker -H tcp://$SENTINEL_HOST:2375 service update --image $CI_REGISTRY_IMAGE:0.0.$CI_BUILD_ID sentinel-nuheat

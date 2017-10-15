@@ -108,6 +108,60 @@ paths:
         default:
           $ref: '#/responses/Error'
 
+  /heater/{id}/{mode}:
+    x-swagger-router-controller: heater
+    get:
+      operationId: setMode
+      security:
+      - Oauth:
+        - user
+      parameters:
+      - in: path
+        name: id
+        required: true
+        type: string
+      - in: path
+        name: mode
+        required: true
+        type: string
+        enum: [
+          auto,
+          away,
+          home,
+          off
+        ]
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+        default:
+          $ref: '#/responses/Error'
+
+  /heater/{id}/set/{temp}:
+    x-swagger-router-controller: heater
+    get:
+      operationId: setTemp
+      security:
+      - Oauth:
+        - user
+      parameters:
+      - in: path
+        name: id
+        required: true
+        type: string
+      - in: path
+        name: temp
+        required: true
+        type: string
+      responses:
+        200:
+          description: ok
+          schema:
+            type: object
+        default:
+          $ref: '#/responses/Error'
+
   /swagger:
       x-swagger-pipe: swagger_raw
 

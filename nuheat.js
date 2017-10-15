@@ -1,9 +1,9 @@
 require('array.prototype.find');
 
-function myq(config) {
+function nuheat(config) {
 
-    if ( !(this instanceof myq) ){
-        return new myq(config);
+    if ( !(this instanceof nuheat) ){
+        return new nuheat(config);
     }
 
     const memwatch = require('memwatch-next');
@@ -13,7 +13,7 @@ function myq(config) {
     });
 
     const redis = require('redis');
-    var moment = require('moment');
+    let moment = require('moment');
 
     let pub = redis.createClient(
         {
@@ -28,59 +28,75 @@ function myq(config) {
         process.exit(1);
     });
 
-    var NodeCache = require( "node-cache" );
+    let NodeCache = require( "node-cache" );
 
-    var deviceCache = new NodeCache();
-    var statusCache = new NodeCache();
+    let deviceCache = new NodeCache();
+    let statusCache = new NodeCache();
 
-    var merge = require('deepmerge');
+    let merge = require('deepmerge');
 
-    var request = require('request');
+    let request = require('request');
 
-    var jar = request.jar();
+    let jar = request.jar();
 
     request = request.defaults({jar: jar});
 
-    var https = require('https');
-    var keepAliveAgent = new https.Agent({ keepAlive: true });
+    let https = require('https');
+    let keepAliveAgent = new https.Agent({ keepAlive: true });
     /*
      require('request').debug = true
      require('request-debug')(request);
      */
 
-    deviceCache.on( "set", function( key, value ){
-    });
-
-    statusCache.on( "set", function( key, value ){
+    deviceCache.on( 'set', function( key, value ){
         let data = JSON.stringify( { module: 'nuheat', id : key, value : value });
-        //console.log( data );
-        pub.publish("sentinel.device.update",  data);
+        console.log( 'sentinel.device.insert => ' + data );
+        pub.publish( 'sentinel.device.insert', data);
     });
 
-    var api = {
-        'login' : 'authenticate/user',
-        'system' : '/thermostats?sessionid={securityToken}'
+    deviceCache.on( 'delete', function( key ){
+        let data = JSON.stringify( { module: 'nuheat', id : key });
+        console.log( 'sentinel.device.delete => ' + data );
+        pub.publish( 'sentinel.device.delete', data);
+    });
+
+    statusCache.on( 'set', function( key, value ){
+        let data = JSON.stringify( { module: 'nuheat', id : key, value : value });
+        console.log( 'sentinel.device.update => ' + data );
+        pub.publish( 'sentinel.device.update', data);
+    });
+
+    let api = {
+        'login'      : 'authenticate/user',
+        'system'     : 'thermostats?sessionid={securityToken}',
+        'thermostat' : 'thermostat?sessionid={securityToken}',
+        'change'     : 'groups/change?sessionid={securityToken}'
     };
 
     for( let k in api ){
         api[k] = api[k].replace('{appId}', config.appid).replace('{culture}', config.culture);
     }
 
-    var that = this;
+    let that = this;
 
-    var securityToken = null;
+    let securityToken = null;
 
-    var typeNameCache = { 'devices' : {}, 'attributes' : {} };
+    let typeNameCache = { 'devices' : {}, 'attributes' : {} };
 
-    var celsiusToFahrenheit = function (c) {
-        return Math.round(c * (9 / 5.0) + 32.0);
+    let celsiusToFahrenheit = function (c) {
+        return Math.round(c * (9.0 / 5.0) + 32.0);
     };
 
+    let fahrenheitToCelcius = function (f) {
+        return Math.round( (f - 32.0) * (5.0/9.0) );
+    };
+
+
     function processDevice( d ){
-        var device = { 'current' : {} };
+        let device = { 'current' : {} };
         device['name'] = d.Room;
         device['id'] = d.SerialNumber;
-        device['type'] = 'hvac.heater.floor';
+        device['type'] = 'heater.floor';
         device['current'] = { 'temperature' : { 'heat' : {} } };
         device['current']['state'] = (d.Heating ? 'heating' : 'off');
         device['current']['temperature']['heat']['set'] = celsiusToFahrenheit( d.SetPointTemp / 100 );
@@ -179,28 +195,95 @@ function myq(config) {
             });
         });
     }
+/*
+    this.setValue = ( id, data ) => {
 
-    this.setAttribute = ( id, attr, value ) => {
+        let url = api.change + '?&serialnumber=' + id;
 
-        return new Promise( (fulfill, reject) => {
-
-            let url = api.set + '?myQDeviceId=' + id + '&attributename=' + attr + '&attributevalue=' + value;
-            //https://www.myliftmaster.com/Device/TriggerStateChange?myQDeviceId=653445&attributename=desireddoorstate&attributevalue=1
-
-            return call(url, 'POST' )
-                .then( (data) => {
-                    let result = {};
-                    /*
-                     result['id'] = id;
-                     result['updated'] = moment(parseInt(data.UpdatedTime)).format();
-                     */
-                    fulfill(result);
-                })
-                .catch( (err) =>{
-                    reject(err);
-                })
-        });
+        return call( url, 'POST', data );
     };
+*/
+    this.setValue = ( id, data ) => {
+
+        let url = api.thermostat + '&serialnumber=' + id;
+        return call( url, 'POST', data );
+
+    };
+
+    this.setTemperature = ( id, f ) => {
+
+        let data = {
+            SetPointTemp: fahrenheitToCelcius(f) * 10,
+            ScheduleMode: 2,
+            HoldSetPointDateTime: moment.utc().add( 1, 'h' ).format('ddd, Do MMM YYYY HH:mm:ss z')
+        };
+
+        return this.setValue( id, data );
+    };
+
+    this.setHold = (id) => {
+
+        let data = {
+            ScheduleMode: 3,
+            HoldSetPointDateTime: moment.utc().add( 1, 'h' ).format('ddd, Do MMM YYYY HH:mm:ss z')
+        };
+
+        return this.setValue( id, data );
+    };
+
+    this.resumeProgram = (id) => {
+
+        let data = {
+            ScheduleMode: 1
+        };
+
+        return that.setValue( id, data );
+    };
+
+    this.setAway = (id) => {
+/*
+        let data = {
+            "GroupId": 3295,
+            "AwayMode": true,
+            "GroupName": "Home",
+            "SerialNumbers": [id]
+        };
+*/
+
+        let data = {
+            SetPointTemp: 500,
+            ScheduleMode: 3,
+            HoldSetPointDateTime: moment.utc().add( 1, 'h' ).format('ddd, Do MMM YYYY HH:mm:ss z')
+        };
+
+        return this.setValue( id, data );
+    };
+
+    this.setMode = ( id, mode ) => {
+
+        switch (mode){
+            case 'home':
+            case 'auto':
+                return this.resumeProgram(id);
+            case 'away':
+            case 'off':
+                return this.setAway(id);
+        }
+
+    };
+/*
+    this.setHold = ( id, params ) => {
+        return that.callFunction( id, 'setHold', params );
+    };
+
+    {"ScheduleMode":3,"HoldSetPointDateTime":"Sun, 15 Oct 2017 01:03:13 GMT"}
+
+
+    {"GroupId":3295,"AwayMode":true,"GroupName":"Home","SerialNumbers":["45837","327333","327315"]}
+
+    {"SetPointTemp":"2606","ScheduleMode":2,"HoldSetPointDateTime":"Sun, 15 Oct 2017 00:00:17 GMT"}
+*/
+
 
     this.getDevices = () => {
 
@@ -335,7 +418,7 @@ function myq(config) {
         });
     /*
      this.raw = function( params, success, failed ){
-     var url = api.system;
+     let url = api.system;
      call( url, "get", null, function(data){
      success(data);
      });
@@ -343,10 +426,10 @@ function myq(config) {
      */
     this.system = function( params, success, failed ){
         that.status( null, function( status ){
-            var devices = [];
+            let devices = [];
 
             status.Devices.map( function(d){
-                var device = {};
+                let device = {};
 
                 //if ( d.MyQDeviceTypeName !== undefined )
                 //    typeNameCache.devices[d.MyQDeviceTypeId] = d.MyQDeviceTypeName;
@@ -363,4 +446,4 @@ function myq(config) {
     return this;
 }
 
-module.exports = myq;
+module.exports = nuheat;

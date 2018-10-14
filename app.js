@@ -54,7 +54,7 @@ consul.kv.get(`config/sentinel/${moduleName}`, function(err, result) {
         });
     };
 
-    if (!global.config.newrelic) {
+    if (global.config.newrelic) {
         require('newrelic');
     }
 

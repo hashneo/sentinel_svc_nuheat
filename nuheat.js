@@ -6,12 +6,6 @@ function nuheat(config) {
         return new nuheat(config);
     }
 
-    const memwatch = require('memwatch-next');
-
-    memwatch.on('leak', (info) => {
-        console.error('Memory leak detected:\n', info);
-    });
-
     const redis = require('redis');
     let moment = require('moment');
 

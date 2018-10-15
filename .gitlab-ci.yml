@@ -66,4 +66,4 @@ cleanup_job:
   stage: cleanup
   script:
     - docker rmi $REGISTRY_IMAGE:$CI_PIPELINE_ID-$CI_COMMIT_SHA $REGISTRY_IMAGE:latest-staging
-    - docker system prune -f
+    

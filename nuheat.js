@@ -92,7 +92,7 @@ function nuheat(config) {
         device['id'] = d.SerialNumber;
         device['type'] = 'heater.floor';
         device['current'] = { 'temperature' : { 'heat' : {} } };
-        device['current']['state'] = (d.Heating ? 'heating' : 'off');
+        device['current']['state'] = (d.Heating ? 'heat' : 'off');
         device['current']['temperature']['heat']['set'] = celsiusToFahrenheit( d.SetPointTemp / 100 );
         device['current']['temperature']['current'] = celsiusToFahrenheit( d.Temperature / 100 );
         //device['current']['online'] = d.Online;

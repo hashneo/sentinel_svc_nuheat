@@ -398,7 +398,8 @@ function nuheat(config) {
                     })
                     .catch((err) => {
                         console.error(err);
-                        setTimeout(pollSystem, 60000);
+                        process.exit(1);
+                        //setTimeout(pollSystem, 60000);
                     });
 
             }

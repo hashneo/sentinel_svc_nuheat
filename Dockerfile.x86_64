@@ -1,17 +1,9 @@
-FROM node:alpine
-
-#bash is used to run npm test inside the container
-#RUN apk update && apk upgrade && apk --update add bash && rm -rf /var/cache/apk/*
+FROM node:10-jessie
 
 WORKDIR /src
 ADD . .
 
-RUN apk add --no-cache --virtual .gyp \
-        python \
-        make \
-        g++ \
-    && npm install \
-    && apk del .gyp
+RUN npm install
 
 EXPOSE 5000
 
